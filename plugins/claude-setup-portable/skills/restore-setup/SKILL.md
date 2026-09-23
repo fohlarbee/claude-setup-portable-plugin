@@ -52,9 +52,17 @@ commands, never by writing to Claude Code's internal state files directly.
      each is done, or offer to re-run `claude plugin list --json` afterward to verify instead
      of taking their word for it.
    - If a plugin's install would trigger a marketplace-declared command prompt (visible in
-     `--json` output as a `shownCommand`), tell the user about it in the printed
-     instructions — **never tell them to pass `-y` or `--accept-command` blindly.** That
-     prompt exists so a person looks at the command before it runs; skip it only if the user
+     `--json` output as a `shownCommand`, `failureCode: "command_source_refused"`), tell the
+     user about it in the printed instructions — **never tell them to pass `-y` or
+     `--accept-command` blindly.** Verified directly (not just assumed): inside a Claude
+     Code session, both `-y` and `--accept-command <sha256>` are refused categorically for a
+     command-source install — even with the exact matching sha256, the response is
+     `"--accept-command is ignored inside a Claude Code session: run this in your own
+     terminal"` and the plugin is not installed. This is a hard product boundary, not just a
+     convention this skill is choosing to follow — there is no flag combination that lets an
+     agent session accept one of these on the user's behalf. Print the full command shown in
+     `shownCommand.command` and the `run this in your own terminal:` instruction verbatim so
+     the user can review and accept it themselves; skip explaining this only if the user
      explicitly says they've already reviewed and trust it.
 7. Restore skills/commands. Note: if a `~/.claude/skills/<name>/` entry contains its own
    `.claude-plugin/plugin.json`, restoring its files here is the *entire* restore for it —
@@ -83,7 +91,10 @@ commands, never by writing to Claude Code's internal state files directly.
 - Never write directly to `installed_plugins.json`, `enabledPlugins` in settings, or
   anything under `plugins/cache/` — those are Claude Code's own state, rebuilt correctly
   only by the real install commands.
-- Never auto-accept a marketplace-declared command on the user's behalf.
+- Never claim you *can* auto-accept a marketplace-declared command on the user's behalf —
+  don't try `-y` or `--accept-command` as a shortcut and report it as blocked instead of
+  quietly working around it. Verified: Claude Code itself refuses both inside a session,
+  even with a correct sha256, so there's no workaround to reach for in the first place.
 - Never overwrite `CLAUDE.md` or `settings.json` without a backup and explicit confirmation
   when they already exist and differ from the manifest.
 - Never assume `~` expands the same way cross-platform, or that `jq` is installed — do path
