@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "claude-setup-portable",
+  "version": "0.1.0",
+  "description": "Move your Claude Code plugins, skills, and configuration to a new machine without losing them.",
+  "author": {
+    "name": "fohlarbee",
+    "email": "sammyola246@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": ["migration", "setup", "plugins", "skills", "portable", "backup"],
+  "skills": [
+    "./skills/export-setup",
+    "./skills/restore-setup"
+  ]
+}

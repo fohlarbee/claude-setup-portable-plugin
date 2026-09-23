@@ -1,0 +1,12 @@
+{
+  "name": "claude-setup-portable-tools",
+  "owner": { "name": "Folaranmi Olanrewaju" },
+  "description": "Move your Claude Code plugins, skills, and configuration to a new machine without losing them — without copying Claude Code's internal state.",
+  "plugins": [
+    {
+      "name": "claude-setup-portable",
+      "source": "./plugins/claude-setup-portable",
+      "description": "Export and restore your Claude Code plugins, skills, CLAUDE.md, and settings across machines by regenerating state through the real CLI, not by copying it."
+    }
+  ]
+}
