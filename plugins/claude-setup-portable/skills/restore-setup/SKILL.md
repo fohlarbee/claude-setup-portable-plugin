@@ -42,16 +42,20 @@ commands, never by writing to Claude Code's internal state files directly.
      either merge or ask the user how to reconcile.
    - Same backup-before-overwrite rule for `settings.json`.
 5. For each marketplace not already known: run `claude plugin marketplace add <source>`.
-6. For each plugin not already installed: run
-   `claude plugin install <name>@<marketplace> --json` and parse only the **last line** of
-   stdout as JSON — a marketplace-declared command (e.g. a headersHelper fetch) prints above
-   it, and that line is not part of the result.
-   - **`-y`/auto-accept has no effect inside a Claude Code session and is refused when stdin
-     isn't a TTY.** Do not attempt to run installs directly from this skill. Instead, print
-     the exact commands (one per plugin, grouped by marketplace-add-first-then-install
-     order) and tell the user to run them from their own terminal. Wait for them to confirm
-     each is done, or offer to re-run `claude plugin list --json` afterward to verify instead
-     of taking their word for it.
+6. For each plugin not already installed: **run `claude plugin install <name>@<marketplace>
+   --json` directly** — verified against real installs, not assumed: an ordinary
+   git/url/archive-sourced plugin installs successfully with no confirmation needed at all,
+   even fully non-interactively, inside a Claude Code session. There is no general "can't
+   install from inside a session" limitation — don't tell the user to run these themselves
+   when the tool can just do it. Parse only the **last line** of stdout as JSON — a
+   marketplace-declared command (see below) prints human-readable text above it, and that
+   line is not part of the structured result.
+   - **The one real exception**, and it's narrow: a plugin whose source is `command` or
+     whose entry sets `headersHelper` triggers a confirmation gate that genuinely cannot be
+     satisfied from inside a session (see below). Only for an install that actually comes
+     back with `failureCode: "command_source_refused"` or `"entry_helper_unconfirmed"` —
+     not preemptively, and not for every install — fall back to printing that one command
+     for the user to run in their own terminal, then continue installing the rest directly.
    - A marketplace-declared command shows up two ways, both verified directly against real
      installs (not assumed from docs) — treat them the same:
      - A **command-source** plugin (the whole plugin comes from running a local command):
@@ -85,7 +89,17 @@ commands, never by writing to Claude Code's internal state files directly.
      bring it over themselves.
    - If a target directory already exists, don't overwrite — report the conflict and ask.
 8. Merge allowlisted `settings` keys into `~/.claude/settings.json` (after backing it up),
-   only for keys that were missing or that the user approved overwriting in step 4.
+   only for keys that were missing or that the user approved overwriting in step 4. **This
+   must be read-existing-file, modify only the specific keys, write back — never write a
+   fresh object built only from the manifest's `settings`.** Proven by getting this wrong in
+   testing, not just a theoretical risk: writing `settings.json` from just `{model, theme}`
+   silently deleted the `enabledPlugins` key that step 6's installs had just populated,
+   leaving every plugin installed but disabled — exactly the #17832 failure mode this
+   plugin's README exists to avoid, self-inflicted by skipping the merge step. Do the merge
+   in one read → modify → write, in that order, after step 6 has finished installing, and
+   never touch `enabledPlugins` here at all — step 6's real installs are what populate it
+   correctly; this step only adds the unrelated allowlisted keys (`model`, `theme`, etc.)
+   alongside whatever is already there.
 9. If the manifest has `claudeMd.content`, write it to `~/.claude/CLAUDE.md` only if that
    file doesn't already exist, or after explicit confirmation if it does (see step 4). If
    only `claudeMd.sha256` is present, tell the user to copy that file over by hand and how to
@@ -109,5 +123,8 @@ commands, never by writing to Claude Code's internal state files directly.
   to reach for in the first place.
 - Never overwrite `CLAUDE.md` or `settings.json` without a backup and explicit confirmation
   when they already exist and differ from the manifest.
+- Never write `settings.json` as a fresh object containing only the manifest's `settings`
+  keys — always read-modify-write the existing file. Confirmed by reproducing the bug: doing
+  this wipes `enabledPlugins` and leaves every just-installed plugin disabled.
 - Never assume `~` expands the same way cross-platform, or that `jq` is installed — do path
   joins and JSON parsing with the tools actually available in this environment.

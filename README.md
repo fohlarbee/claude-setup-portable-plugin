@@ -143,11 +143,13 @@ your own / third-party), every plugin, every settings key that would change — 
 touching anything, and never overwrites `CLAUDE.md` or `settings.json` without a backup and
 your explicit confirmation.
 
-**A note on installs:** `claude plugin install` can't run unattended inside a Claude Code
-session (`-y` has no effect there, and it's refused when stdin isn't a TTY). `restore-setup`
-prints the exact commands and has you run them from your own terminal — this is also what
-keeps a marketplace-declared command's confirmation prompt intact instead of routing around
-it.
+**A note on installs:** ordinary plugins install directly, no manual step needed — verified
+against real installs on a clean machine, not assumed. The one exception is a plugin whose
+source runs a local command (a `command`-source plugin, or an `archive`-source with
+`headersHelper`): that confirmation genuinely can't happen from inside a session, even with
+`-y` or the exact matching `--accept-command <sha256>` — confirmed by testing both. Only for
+that specific case, `restore-setup` prints the exact command and has you run it in your own
+terminal, then continues installing everything else on its own.
 
 See [`plugins/claude-setup-portable/SCHEMA.md`](./plugins/claude-setup-portable/SCHEMA.md)
 for the full `claude-setup.json` format.
