@@ -52,19 +52,28 @@ commands, never by writing to Claude Code's internal state files directly.
      order) and tell the user to run them from their own terminal. Wait for them to confirm
      each is done, or offer to re-run `claude plugin list --json` afterward to verify instead
      of taking their word for it.
-   - If a plugin's install would trigger a marketplace-declared command prompt (visible in
-     `--json` output as a `shownCommand`, `failureCode: "command_source_refused"`), tell the
-     user about it in the printed instructions — **never tell them to pass `-y` or
-     `--accept-command` blindly.** Verified directly (not just assumed): inside a Claude
-     Code session, both `-y` and `--accept-command <sha256>` are refused categorically for a
-     command-source install — even with the exact matching sha256, the response is
-     `"--accept-command is ignored inside a Claude Code session: run this in your own
-     terminal"` and the plugin is not installed. This is a hard product boundary, not just a
-     convention this skill is choosing to follow — there is no flag combination that lets an
-     agent session accept one of these on the user's behalf. Print the full command shown in
-     `shownCommand.command` and the `run this in your own terminal:` instruction verbatim so
-     the user can review and accept it themselves; skip explaining this only if the user
-     explicitly says they've already reviewed and trust it.
+   - A marketplace-declared command shows up two ways, both verified directly against real
+     installs (not assumed from docs) — treat them the same:
+     - A **command-source** plugin (the whole plugin comes from running a local command):
+       `shownCommand.kind: "command_source"`, `failureCode: "command_source_refused"`.
+     - An **archive-source `headersHelper`** (a normal URL download, but a local command
+       mints the auth headers sent with it — distinct code path, only triggers when the
+       user installs or updates that one plugin by itself, never for a batch install or a
+       dependency pull): `shownCommand.kind: "entry_helper"`, `failureCode:
+       "entry_helper_unconfirmed"`. Its `shownCommand` also carries `archiveUrl` — include
+       that in what you show the user, not just the command.
+     For either kind, tell the user about it in the printed instructions — **never tell
+     them to pass `-y` or `--accept-command` blindly.** Verified directly for both kinds:
+     inside a Claude Code session, `-y` and `--accept-command <sha256>` are refused
+     categorically — even with the exact matching sha256 (`acceptCommandMatched: true` in
+     the response), the command is not run and the response says to run it in your own
+     terminal. This is a hard product boundary, not just a convention this skill is
+     choosing to follow — there is no flag combination that lets an agent session accept
+     either kind on the user's behalf. Print the full command from `shownCommand.command`
+     (plus `archiveUrl` for the `entry_helper` kind) and the "run this in your own
+     terminal" instruction verbatim so the user can review and accept it themselves; skip
+     explaining this only if the user explicitly says they've already reviewed and trust
+     it.
 7. Restore skills/commands. Note: if a `~/.claude/skills/<name>/` entry contains its own
    `.claude-plugin/plugin.json`, restoring its files here is the *entire* restore for it —
    it auto-loads as `<name>@skills-dir` next session, with no separate `claude plugin
@@ -93,9 +102,11 @@ commands, never by writing to Claude Code's internal state files directly.
   anything under `plugins/cache/` — those are Claude Code's own state, rebuilt correctly
   only by the real install commands.
 - Never claim you *can* auto-accept a marketplace-declared command on the user's behalf —
-  don't try `-y` or `--accept-command` as a shortcut and report it as blocked instead of
-  quietly working around it. Verified: Claude Code itself refuses both inside a session,
-  even with a correct sha256, so there's no workaround to reach for in the first place.
+  neither a command-source install nor an archive-source `headersHelper`. Don't try `-y` or
+  `--accept-command` as a shortcut on either; report it as blocked instead of quietly
+  working around it. Verified for both kinds: Claude Code itself refuses `-y` and
+  `--accept-command` inside a session, even with a correct sha256, so there's no workaround
+  to reach for in the first place.
 - Never overwrite `CLAUDE.md` or `settings.json` without a backup and explicit confirmation
   when they already exist and differ from the manifest.
 - Never assume `~` expands the same way cross-platform, or that `jq` is installed — do path
