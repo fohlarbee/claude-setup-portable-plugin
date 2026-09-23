@@ -131,6 +131,10 @@ text of `CLAUDE.md`, rather than just its hash).
 **On the machine you're leaving:**
 > "Export my Claude Code setup" / "back up my plugins and skills before I switch machines"
 
+Writes `claude-setup.json` (and `claude-setup.md`, a plain-English summary of what it
+captured) to `~/Desktop`, falling back to your home directory if `Desktop` doesn't exist —
+either way, Claude tells you exactly where it landed.
+
 **On the new machine:**
 > "Restore my Claude Code setup" / "set up this new machine" / "I have a claude-setup.json"
 

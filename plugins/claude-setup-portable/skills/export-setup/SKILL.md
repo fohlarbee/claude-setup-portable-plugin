@@ -5,8 +5,8 @@ description: Use when the user wants to save, export, or back up their Claude Co
 
 # export-setup
 
-Writes `claude-setup.json` (plus, optionally, `claude-setup-skills.tar.gz`) to the current
-directory, capturing what does NOT already survive a machine move on its own.
+Writes `claude-setup.json` (plus, optionally, `claude-setup-skills.tar.gz`) to `~/Desktop`,
+capturing what does NOT already survive a machine move on its own.
 
 ## What already survives a move — never touch this
 
@@ -49,11 +49,11 @@ same way into `~/.claude/skills/synced/`. Both are already portable. Exclude the
      `git -C <path> remote get-url origin` (may fail — that's fine, treat as untracked).
    - If it has a working origin remote: `{name, portability: "git", remote}`.
    - If not: ask the user (once, listing all untracked skills/commands together, not one
-     prompt per item) whether to bundle them into `claude-setup-skills.tar.gz` next to the
-     manifest. This reads file contents into an archive, so get explicit confirmation before
-     doing it — do not bundle silently.
-     - If yes: tar the untracked ones (`tar czf claude-setup-skills.tar.gz -C ~/.claude
-       skills/<name> commands/<name> ...`), record `{name, portability: "bundled",
+     prompt per item) whether to bundle them into `~/Desktop/claude-setup-skills.tar.gz`.
+     This reads file contents into an archive, so get explicit confirmation before doing it
+     — do not bundle silently.
+     - If yes: tar the untracked ones (`tar czf ~/Desktop/claude-setup-skills.tar.gz -C
+       ~/.claude skills/<name> commands/<name> ...`), record `{name, portability: "bundled",
        bundlePath: "claude-setup-skills.tar.gz#skills/<name>"}` per entry.
      - If no: record `{name, portability: "manual"}` for those the user declined.
 4. Check `~/.claude/CLAUDE.md`. If present, compute its sha256. Ask the user whether to
@@ -67,17 +67,24 @@ same way into `~/.claude/skills/synced/`. Both are already portable. Exclude the
    reconstructed from `plugins`/`marketplaces` by real installs on restore, never copied
    directly. Never read `~/.claude/.credentials.json` or `~/.claude.json` at all — not even
    to check for keys to exclude.
-6. Write `claude-setup.json` with `schemaVersion: 1`, `exportedAt` (ISO8601, now),
+6. Determine the target folder: `~/Desktop` if it exists, otherwise fall back to the user's
+   home directory and say so explicitly in the step 8 notification — don't silently write
+   somewhere else without mentioning it. Write `~/Desktop/claude-setup.json` (or the
+   fallback path) with `schemaVersion: 1`, `exportedAt` (ISO8601, now),
    `exportedFrom: {claudeCodeVersion, platform}` (`claude --version`, `process.platform` /
    `uname`), and the fields gathered above.
-7. Write `claude-setup.md`, a short human-readable summary: what was captured (counts), what
-   was skipped and why, what needs manual action (any `portability: "manual"` entries, and
-   CLAUDE.md if hash-only).
-8. Tell the user in chat: where the file(s) landed, the one-line takeaway (N plugins across M
-   marketplaces, N skills — X git-backed, Y bundled, Z manual), and to carry `claude-setup.json`
+7. Write `claude-setup.md` next to it in the same folder — a short human-readable summary:
+   what was captured (counts), what was skipped and why, what needs manual action (any
+   `portability: "manual"` entries, and CLAUDE.md if hash-only).
+8. **Always tell the user explicitly where the files were written** — e.g. "Saved to
+   ~/Desktop: claude-setup.json and claude-setup.md" (name the fallback folder instead if
+   `~/Desktop` didn't exist) — plus the one-line takeaway (N plugins across M marketplaces, N
+   skills — X git-backed, Y bundled, Z manual), and that they can carry `claude-setup.json`
    (and the tarball, if created) to the new machine however they like — it's plain text/a
    plain archive, safe to email to themselves once they've confirmed the settings section
-   doesn't contain anything they'd rather not send that way.
+   doesn't contain anything they'd rather not send that way. Don't just say "it's done" —
+   name the folder every time, since that's the one thing the user needs to go find the
+   files afterward.
 
 ## Never
 

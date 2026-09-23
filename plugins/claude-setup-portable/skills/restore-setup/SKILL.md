@@ -10,8 +10,9 @@ commands, never by writing to Claude Code's internal state files directly.
 
 ## Steps
 
-1. Locate `claude-setup.json` — check the current directory first, ask for a path if it's
-   not there. Parse it; refuse and explain if `schemaVersion` isn't `1`.
+1. Locate `claude-setup.json` — `export-setup` writes it to `~/Desktop` by default, so check
+   there first, then the current directory, then ask for a path if it's in neither. Parse
+   it; refuse and explain if `schemaVersion` isn't `1`.
 2. Check `claude --version` locally. If below `2.1.273`, tell the user claude.ai account
    plugin/skill sync isn't available on this install, so anything that was in the source
    export's `skipped` list (synced items) won't come over automatically either — they'd need
